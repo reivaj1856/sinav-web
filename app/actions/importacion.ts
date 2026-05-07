@@ -87,7 +87,7 @@ export async function prevalidarCsvAction(formData: FormData) {
 }
 
 export async function ejecutarImportacionAction(validRows: CsvRow[]) {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) return { ok: false, error: "Sesión inválida." }
 
