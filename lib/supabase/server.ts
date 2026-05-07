@@ -11,15 +11,13 @@ export async function createSupabaseServerClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        // En Next 16 algunos runtimes no exponen getAll(), pero el store sí suele tener get(name)
         getAll(): CookieLike[] {
-          // Intento 1: si existe getAll (en algunos casos sí)
           const anyStore = cookieStore as any
+
           if (typeof anyStore.getAll === "function") {
             return anyStore.getAll().map((c: any) => ({ name: c.name, value: c.value }))
           }
 
-          // Intento 2: iteración
           try {
             const all: CookieLike[] = []
             for (const c of anyStore as any) {
@@ -27,16 +25,18 @@ export async function createSupabaseServerClient() {
             }
             return all
           } catch {
-            // Intento 3 (fallback): no hay forma genérica de listar cookies => retorna vacío
             return []
           }
         },
 
         setAll(cookiesToSet) {
-          // En Server Actions normalmente SÍ deja setear cookies
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
-          })
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set({ name, value, ...(options ?? {}) })
+            })
+          } catch {
+            // en algunos contextos no se puede mutar cookies
+          }
         },
       },
     }
