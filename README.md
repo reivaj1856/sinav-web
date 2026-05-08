@@ -1,3 +1,119 @@
+Copilot said: ## Verificación de rutas (script `check-routes.sh`) Este proyecto
+Verificación de rutas (script check-routes.sh)
+Este proyecto incluye (o puede incluir) un script para confirmar que las rutas principales responden correctamente y que las rutas protegidas por autenticación redirigen al login cuando no hay sesión.
+
+Requisitos
+Tener el servidor corriendo (por defecto en http://localhost:3000)
+Tener disponible bash y curl
+En Windows: usar Git Bash (recomendado) o WSL
+1) Crear el archivo
+Crea un archivo en la raíz del proyecto llamado check-routes.sh con el siguiente contenido:
+
+bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE="${BASE:-http://localhost:3000}"
+CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-3}"
+MAX_TIME="${MAX_TIME:-8}"
+
+COOKIE_JAR="$(mktemp)"
+trap 'rm -f "$COOKIE_JAR"' EXIT
+
+head_status_and_location() {
+  local method="$1"
+  local url="$2"
+
+  curl -sS -I -D - -o /dev/null \
+    --connect-timeout "$CONNECT_TIMEOUT" \
+    --max-time "$MAX_TIME" \
+    -X "$method" \
+    -b "$COOKIE_JAR" -c "$COOKIE_JAR" \
+    "$url" | awk '
+      BEGIN { status=""; loc="" }
+      /^HTTP\// { status=$2 }
+      /^[Ll]ocation:/ {
+        loc=$0
+        sub(/^[Ll]ocation:[[:space:]]*/, "", loc)
+        gsub(/\r/, "", loc)
+      }
+      END { print status, loc }
+    '
+}
+
+check() {
+  local method="$1"
+  local path="$2"
+  local label="$3"
+
+  echo -n "${method} ${path} (${label}): "
+
+  read -r STATUS LOCATION < <(head_status_and_location "$method" "${BASE}${path}")
+
+  if [[ -z "${STATUS:-}" ]]; then
+    echo "❌ ERROR (sin respuesta)"
+    return
+  fi
+
+  if [[ "$STATUS" == "401" || "$STATUS" == "403" ]]; then
+    echo "✅ SEGURO (${STATUS})"
+  elif [[ ("$STATUS" == "307" || "$STATUS" == "308") && "$LOCATION" == *"/login"* ]]; then
+    echo "✅ SEGURO (${STATUS} -> ${LOCATION})"
+  elif [[ "$STATUS" =~ ^2|^3 ]]; then
+    if [[ -n "${LOCATION:-}" ]]; then
+      echo "⚠️  ACCESIBLE (${STATUS} -> ${LOCATION})"
+    else
+      echo "⚠️  ACCESIBLE (${STATUS})"
+    fi
+  else
+    if [[ -n "${LOCATION:-}" ]]; then
+      echo "❌ ERROR (${STATUS} -> ${LOCATION})"
+    else
+      echo "❌ ERROR (${STATUS})"
+    fi
+  fi
+}
+
+echo "BASE=${BASE}"
+echo
+
+check GET "/login" "Login (page.tsx)"
+check GET "/dashboard" "Dashboard (page.tsx)"
+check GET "/dashboard/pacientes" "Pacientes"
+check GET "/dashboard/vacunacion" "Vacunación"
+check GET "/dashboard/importacion" "Importación"
+2) Dar permisos de ejecución
+En Git Bash / Linux / macOS:
+
+bash
+chmod +x check-routes.sh
+3) Ejecutar el script
+Con el servidor corriendo en localhost:3000:
+
+bash
+BASE=http://localhost:3000 ./check-routes.sh
+Si tu app corre en otro puerto/host:
+
+bash
+BASE=http://localhost:4000 ./check-routes.sh
+# o
+BASE=http://127.0.0.1:3000 ./check-routes.sh
+Interpretación de resultados
+✅ SEGURO (401/403)
+La ruta está protegida y el servidor respondió “no autorizado / prohibido”.
+
+✅ SEGURO (307/308 -> /login)
+La ruta está protegida y redirige al login cuando no hay sesión (comportamiento esperado).
+
+⚠️  ACCESIBLE (200)
+La ruta es accesible sin autenticación (pública) o no está protegida.
+
+❌ ERROR (404/500/...)
+La ruta no existe o hay un error interno.
+
+Notas
+El script valida rutas sin sesión (anónimo). Para validar rutas “logueado”, se necesitaría un endpoint de login accesible desde curl o un flujo de autenticación automatizable (no siempre posible con Server Actions).
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
