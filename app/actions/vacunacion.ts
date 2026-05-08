@@ -2,7 +2,6 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { RegistrarDosisSchema } from "@/lib/validators/vacunacion"
-import { z } from "zod"
 
 function daysBetween(a: Date, b: Date) {
   const ms = a.getTime() - b.getTime()
@@ -10,7 +9,7 @@ function daysBetween(a: Date, b: Date) {
 }
 
 export async function registrarDosisAction(formData: FormData) {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
