@@ -1,15 +1,17 @@
-Copilot said: ## Verificación de rutas (script `check-routes.sh`) Este proyecto
-Verificación de rutas (script check-routes.sh)
-Este proyecto incluye (o puede incluir) un script para confirmar que las rutas principales responden correctamente y que las rutas protegidas por autenticación redirigen al login cuando no hay sesión.
+## Verificación de rutas (check-routes.sh)
 
-Requisitos
-Tener el servidor corriendo (por defecto en http://localhost:3000)
-Tener disponible bash y curl
-En Windows: usar Git Bash (recomendado) o WSL
-1) Crear el archivo
-Crea un archivo en la raíz del proyecto llamado check-routes.sh con el siguiente contenido:
+Este proyecto usa un script para **confirmar que las rutas principales responden correctamente** y que las rutas protegidas por autenticación **redirigen al login** cuando no hay sesión.
 
-bash
+### Requisitos
+- Servidor corriendo (por defecto `http://localhost:3000`)
+- `bash` y `curl`
+  - En Windows: usar **Git Bash** (recomendado) o WSL
+
+### 1) Crear el archivo
+
+Crea un archivo en la raíz del proyecto llamado `check-routes.sh` con el siguiente contenido:
+
+```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -82,38 +84,48 @@ check GET "/dashboard" "Dashboard (page.tsx)"
 check GET "/dashboard/pacientes" "Pacientes"
 check GET "/dashboard/vacunacion" "Vacunación"
 check GET "/dashboard/importacion" "Importación"
-2) Dar permisos de ejecución
+```
+
+### 2) Dar permisos de ejecución
+
 En Git Bash / Linux / macOS:
 
-bash
+```bash
 chmod +x check-routes.sh
-3) Ejecutar el script
-Con el servidor corriendo en localhost:3000:
+```
 
-bash
+### 3) Ejecutar el script
+
+Con el servidor corriendo en `localhost:3000`:
+
+```bash
 BASE=http://localhost:3000 ./check-routes.sh
-Si tu app corre en otro puerto/host:
+```
 
-bash
+Si tu app corre en otro host/puerto:
+
+```bash
 BASE=http://localhost:4000 ./check-routes.sh
 # o
 BASE=http://127.0.0.1:3000 ./check-routes.sh
-Interpretación de resultados
-✅ SEGURO (401/403)
-La ruta está protegida y el servidor respondió “no autorizado / prohibido”.
+```
 
-✅ SEGURO (307/308 -> /login)
-La ruta está protegida y redirige al login cuando no hay sesión (comportamiento esperado).
+### Interpretación de resultados
 
-⚠️  ACCESIBLE (200)
-La ruta es accesible sin autenticación (pública) o no está protegida.
+- `✅ SEGURO (401/403)`  
+  La ruta está protegida y el servidor respondió “no autorizado / prohibido”.
 
-❌ ERROR (404/500/...)
-La ruta no existe o hay un error interno.
+- `✅ SEGURO (307/308 -> /login)`  
+  La ruta está protegida y **redirige al login** cuando no hay sesión (comportamiento esperado).
 
-Notas
-El script valida rutas sin sesión (anónimo). Para validar rutas “logueado”, se necesitaría un endpoint de login accesible desde curl o un flujo de autenticación automatizable (no siempre posible con Server Actions).
+- `⚠️  ACCESIBLE (200)`  
+  La ruta es accesible sin autenticación (pública) o no está protegida.
 
+- `❌ ERROR (404/500/...)`  
+  La ruta no existe o hay un error interno.
+
+### Nota
+El script valida **rutas sin sesión** (anónimo). Para validar rutas “logueado”, se necesitaría un endpoint de login automatizable desde `curl` (no siempre posible cuando el login se implementa con Server Actions).
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
