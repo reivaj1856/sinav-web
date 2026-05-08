@@ -1,15 +1,28 @@
 import { KpiCards } from "@/components/app/kpi-cards"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default function DashboardPage() {
+import { getDashboardKpis } from "@/lib/data/dashboard"
+import { getActividadEstablecimiento } from "@/lib/data/actividad"
+import { ActividadRecienteTable } from "@/components/features/dashboard/actividad-reciente-table"
+
+import { getCoberturaMunicipal } from "@/lib/data/cobertura"
+import { CoberturaMunicipalTable } from "@/components/features/dashboard/cobertura-municipal-table"
+
+export default async function DashboardPage() {
+  const [kpis, actividad, cobertura] = await Promise.all([
+    getDashboardKpis(),
+    getActividadEstablecimiento({ limit: 7 }),
+    getCoberturaMunicipal({ limit: 10 }),
+  ])
+
   return (
     <div className="space-y-6">
       <KpiCards
         items={[
-          { title: "Dosis registradas (hoy)", value: "—", hint: "Filtrado por tus permisos (RLS)" },
-          { title: "Pacientes atendidos (hoy)", value: "—" },
-          { title: "Vacunas diferentes (30 días)", value: "—" },
-          { title: "Importaciones pendientes", value: "—" },
+          { title: "Dosis registradas (hoy)", value: kpis.dosisHoy.toString(), hint: "Filtrado por tus permisos (RLS)" },
+          { title: "Pacientes atendidos (hoy)", value: kpis.pacientesHoy.toString() },
+          { title: "Vacunas diferentes (30 días)", value: kpis.vacunas30.toString() },
+          { title: "Importaciones pendientes", value: kpis.importacionesPendientes.toString() },
         ]}
       />
 
@@ -18,8 +31,8 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base">Actividad reciente</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Próximo: tabla de últimas dosis registradas (desde vista segura).
+          <CardContent className="p-4">
+            <ActividadRecienteTable rows={actividad} />
           </CardContent>
         </Card>
 
@@ -27,8 +40,8 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base">Cobertura por municipio</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Próximo: gráfico desde <code>v_cobertura_municipal</code> (security_invoker=true).
+          <CardContent className="p-4">
+            <CoberturaMunicipalTable rows={cobertura} />
           </CardContent>
         </Card>
       </div>
